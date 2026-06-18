@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register — NEXUS SHOP</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Validator.js adds .error-message — map to existing field-error style */
+        .error-message {
+            display: block;
+            font-size: .78rem;
+            color: var(--danger);
+            margin-top: 4px;
+        }
+        .register-wrapper {
+            max-width: 480px;
+            margin: 40px auto 60px;
+            padding: 0 24px;
+        }
+        .form-hint {
+            display: block;
+            font-size: .78rem;
+            color: var(--text-2);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="site-header">
+    <div class="site-header__inner">
+        <a href="index.html" class="logo">NEXUS<span>SHOP</span></a>
+        <nav class="nav">
+            <a href="index.html"     class="nav__link">Catalog</a>
+            <a href="cart.html"      class="nav__link cart-badge">🛒 Cart <span id="cart-count">0</span></a>
+            <a href="register.html"  class="nav__link nav__link--active">Register</a>
+            <a href="moderator.html" class="nav__link">⚙ Moderator</a>
+        </nav>
+    </div>
+</header>
+
+<!-- ===== HERO ===== -->
+<section class="page-hero">
+    <h1 class="page-hero__title">Create <span>Account</span></h1>
+    <p class="page-hero__sub">Join NexusShop to track your orders</p>
+</section>
+
+<!-- ===== FORM ===== -->
+<div class="register-wrapper">
+    <div class="form-section">
+        <h2 class="form-section__title">Registration</h2>
+        <form id="register-form" novalidate>
+
+            <div class="form-group">
+                <label for="r-name">Full Name</label>
+                <input type="text" id="r-name" name="name" class="form-input" placeholder="John Doe">
+            </div>
+
+            <div class="form-group">
+                <label for="r-email">Email</label>
+                <input type="email" id="r-email" name="email" class="form-input" placeholder="john@example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="r-phone">Phone</label>
+                <input type="tel" id="r-phone" name="phone" class="form-input" placeholder="+380 99 999 9999">
+            </div>
+
+            <div class="form-group">
+                <label for="r-password">Password</label>
+                <input type="password" id="r-password" name="password" class="form-input" placeholder="Min 6 chars, letters + digits">
+                <span class="form-hint">Must contain letters and at least one digit</span>
+            </div>
+
+            <div class="form-group">
+                <label for="r-confirm">Confirm Password</label>
+                <input type="password" id="r-confirm" name="confirm" class="form-input" placeholder="Repeat your password">
+            </div>
+
+            <button type="submit" class="btn btn--primary btn--full" id="register-btn">
+                Create Account
+            </button>
+            <p id="register-status" style="margin-top:12px;text-align:center;font-size:.88rem"></p>
+        </form>
+
+        <p style="margin-top:24px;text-align:center;font-size:.85rem;color:var(--text-2)">
+            Already have an account?
+            <a href="index.html">Browse catalog →</a>
+        </p>
+    </div>
+</div>
+
+<!-- ===== FOOTER ===== -->
+<footer class="site-footer">
+    <p>© 2025 NexusShop — All rights reserved</p>
+</footer>
+
+<!-- ===== Firebase SDK (compat версия) ===== -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<!-- Firebase конфиг — инициализирует firebase и переменную db -->
+<script src="js/firebase.config.js"></script>
+
+<!-- ===== SCRIPTS ===== -->
+<script src="js/Cart.js"></script>
+<script src="js/Validator.js"></script>
+<script src="js/Api.js"></script>
+<script>
+
+    // registerpage — это класс странички регистрации
+
+    class RegisterPage {
+        constructor() {
+            this.cart      = new Cart();
+            this.api       = new Api('./');
+            this.validator = null;
+        }
+
+        init() {
+            this._updateCartBadge();
+            this._setupForm();
+        }
+
+        _setupForm() {
+            const form = document.getElementById('register-form');
+            if (!form) return;
+
+            this.validator = new Validator(form);
+            const { rules } = Validator;
+
+            // Кастомне правило: паролі повинні збігатися
+            const confirmMatch = (value) => {
+                const pwd = form.querySelector('[name="password"]').value;
+                if (value !== pwd) return 'Passwords do not match';
+                return null;
+            };
+
+            const fieldRules = {
+                name:     [rules.required, rules.minLen(2)],
+                email:    [rules.required, rules.email],
+                phone:    [rules.required, rules.phone],
+                password: [rules.required, rules.password],
+                confirm:  [rules.required, confirmMatch],
+            };
+
+            // Валидация для входа
+            Object.keys(fieldRules).forEach(name => {
+                const el = form.querySelector(`[name="${name}"]`);
+                el?.addEventListener('blur', () => {
+                    this.validator.validateField(name, el.value, fieldRules[name]);
+                    this.validator.showFieldError(name, this.validator.errors[name]);
+                });
+            });
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                this.validator.clearErrors();
+
+                let allValid = true;
+                Object.entries(fieldRules).forEach(([name, rs]) => {
+                    const el = form.querySelector(`[name="${name}"]`);
+                    const ok = this.validator.validateField(name, el?.value || '', rs);
+                    this.validator.showFieldError(name, this.validator.errors[name]);
+                    if (!ok) allValid = false;
+                });
+
+                if (!allValid) return;
+
+                const btn      = document.getElementById('register-btn');
+                const statusEl = document.getElementById('register-status');
+                btn.disabled    = true;
+                btn.textContent = 'Creating account…';
+                statusEl.textContent = '';
+
+                try {
+                    // ✅ Сохраняем пользователя в Firestore (коллекция "users")
+                    const result = await this.api.registerUser({
+                        name:  form.querySelector('[name="name"]').value,
+                        email: form.querySelector('[name="email"]').value,
+                        phone: form.querySelector('[name="phone"]').value,
+                    });
+                    console.log('✅ Пользователь сохранён в Firestore, ID:', result.id);
+
+                    statusEl.style.color   = 'var(--success)';
+                    statusEl.textContent   = '✓ Account created! Welcome to NexusShop.';
+                    form.reset();
+                } catch (err) {
+                    statusEl.style.color   = 'var(--danger)';
+                    statusEl.textContent   = '✗ Error: ' + err.message;
+                } finally {
+                    btn.disabled    = false;
+                    btn.textContent = 'Create Account';
+                }
+            });
+        }
+
+        _updateCartBadge() {
+            const el = document.getElementById('cart-count');
+            if (el) el.textContent = this.cart.totalItems;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const page = new RegisterPage();
+        page.init();
+    });
+</script>
+
+</body>
+</html>

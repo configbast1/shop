@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart — NEXUS SHOP</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="site-header">
+    <div class="site-header__inner">
+        <a href="index.html" class="logo">NEXUS<span>SHOP</span></a>
+        <nav class="nav">
+            <a href="index.html"     class="nav__link">Catalog</a>
+            <a href="cart.html"      class="nav__link nav__link--active cart-badge">🛒 Cart <span id="cart-count">0</span></a>
+            <a href="moderator.html" class="nav__link">⚙ Moderator</a>
+        </nav>
+    </div>
+</header>
+
+
+<section class="page-hero">
+    <h1 class="page-hero__title">Your <span>Cart</span></h1>
+    <p class="page-hero__sub">Review your items and proceed to checkout</p>
+</section>
+
+
+<div class="cart-layout">
+
+    <div>
+        <div class="cart-items" id="cart-items">
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <div>
+        <div class="cart-summary" id="cart-summary">
+            <div class="cart-summary__title">Order Summary</div>
+            <div class="cart-summary__row"><span>Items</span><span id="summary-count">0</span></div>
+            <div class="cart-summary__row"><span>Shipping</span><span>Free</span></div>
+            <div class="cart-summary__total">
+                <span>Total</span>
+                <span id="summary-total">$0.00</span>
+            </div>
+            <button class="btn btn--primary btn--full mt-16" id="checkout-btn">Proceed to Checkout</button>
+            <button class="btn btn--danger btn--full mt-16" id="clear-cart-btn" style="margin-top:10px">Clear Cart</button>
+        </div>
+
+
+        <div class="form-section mt-16" id="checkout-form-wrapper" style="display:none">
+            <h2 class="form-section__title">Checkout</h2>
+            <form id="checkout-form" novalidate>
+
+                <div class="form-group">
+                    <label for="cf-name">Full Name</label>
+                    <input type="text" id="cf-name" name="name" class="form-input" placeholder="John Doe">
+                </div>
+
+                <div class="form-group">
+                    <label for="cf-email">Email</label>
+                    <input type="email" id="cf-email" name="email" class="form-input" placeholder="john@example.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="cf-phone">Phone</label>
+                    <input type="tel" id="cf-phone" name="phone" class="form-input" placeholder="+380 99 999 9999">
+                </div>
+
+                <div class="form-group">
+                    <label for="cf-address">Delivery Address</label>
+                    <input type="text" id="cf-address" name="address" class="form-input" placeholder="City, Street, House">
+                </div>
+
+                <div class="form-group">
+                    <label for="cf-comment">Comment (optional)</label>
+                    <input type="text" id="cf-comment" name="comment" class="form-input" placeholder="Any notes…">
+                </div>
+
+                <button type="submit" class="btn btn--primary btn--full" id="submit-order-btn">
+                    Place Order
+                </button>
+                <p id="order-status" style="margin-top:12px;text-align:center;font-size:.88rem"></p>
+            </form>
+        </div>
+    </div>
+</div>
+
+<footer class="site-footer">
+    <p>© 2025 NexusShop — All rights reserved</p>
+</footer>
+
+<!-- ===== Firebase SDK (compat версия) ===== -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<!-- Firebase конфиг — инициализирует firebase и переменную db -->
+<script src="js/firebase.config.js"></script>
+
+<script src="js/Product.js"></script>
+<script src="js/Cart.js"></script>
+<script src="js/Api.js"></script>
+<script src="js/Validator.js"></script>
+<script>
+
+    // ============================================================
+    //  CartPage — клас сторінки кошика
+    // ============================================================
+    class CartPage {
+        constructor() {
+            this.api      = new Api('./');
+            this.cart     = new Cart();
+            this.products = [];
+            this.validator = null;
+        }
+
+        async init() {
+            this._updateCartBadge();
+
+            try {
+                const data    = await this.api.getProducts();
+                this.products = data.map(d => new Product(d));
+            } catch {
+                this.products = [];
+            }
+
+            this._render();
+            this._bindEvents();
+            this._setupCheckoutForm();
+        }
+
+        _render() {
+            const itemsEl   = document.getElementById('cart-items');
+            const summaryEl = document.getElementById('cart-summary');
+
+            const entries = this.cart.getEntries(this.products);
+
+            if (entries.length === 0) {
+                itemsEl.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state__icon">🛒</div>
+          <p class="empty-state__text">Your cart is empty</p>
+          <a href="index.html" class="btn btn--primary">Browse Products</a>
+        </div>`;
+                summaryEl.style.display = 'none';
+                return;
+            }
+
+            summaryEl.style.display = '';
+
+            itemsEl.innerHTML = entries.map(({ product: p, qty }) => `
+      <div class="cart-item" data-id="${p.id}">
+        <div class="cart-item__emoji">${p.image}</div>
+        <div class="cart-item__info">
+          <div class="cart-item__name">${p.name}</div>
+          <div class="cart-item__price">${p.formattedPrice} × ${qty} = $${(p.price * qty).toFixed(2)}</div>
+        </div>
+        <div class="qty-control">
+          <button class="qty-dec" data-id="${p.id}">−</button>
+          <span>${qty}</span>
+          <button class="qty-inc" data-id="${p.id}">+</button>
+        </div>
+        <button class="btn btn--danger remove-item" data-id="${p.id}">✕</button>
+      </div>
+    `).join('');
+
+            // Update summary
+            const total = this.cart.calcTotal(this.products);
+            document.getElementById('summary-count').textContent = this.cart.totalItems;
+            document.getElementById('summary-total').textContent = `$${total.toFixed(2)}`;
+        }
+
+        _bindEvents() {
+            const itemsEl = document.getElementById('cart-items');
+
+            // Qty buttons
+            itemsEl.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const id = Number(btn.dataset.id);
+
+                if (btn.classList.contains('qty-inc')) {
+                    this.cart.update(id, this.cart.getQuantity(id) + 1);
+                } else if (btn.classList.contains('qty-dec')) {
+                    this.cart.update(id, this.cart.getQuantity(id) - 1);
+                } else if (btn.classList.contains('remove-item')) {
+                    this.cart.remove(id);
+                }
+
+                this._render();
+                this._updateCartBadge();
+                this._bindEvents();
+            });
+
+            // Clear cart
+            document.getElementById('clear-cart-btn')?.addEventListener('click', () => {
+                this.cart.clear();
+                this._render();
+                this._updateCartBadge();
+            });
+
+            // Show checkout form
+            document.getElementById('checkout-btn')?.addEventListener('click', () => {
+                const fw = document.getElementById('checkout-form-wrapper');
+                fw.style.display = fw.style.display === 'none' ? '' : 'none';
+            });
+        }
+
+        _setupCheckoutForm() {
+            const form = document.getElementById('checkout-form');
+            if (!form) return;
+
+            this.validator = new Validator(form);
+            const { rules } = Validator;
+
+            const fieldRules = {
+                name:    [rules.required, rules.minLen(2)],
+                email:   [rules.required, rules.email],
+                phone:   [rules.required, rules.phone],
+                address: [rules.required, rules.minLen(5)],
+            };
+
+            // Live validation per field
+            Object.keys(fieldRules).forEach(name => {
+                const el = form.querySelector(`[name="${name}"]`);
+                el?.addEventListener('blur', () => {
+                    this.validator.validateField(name, el.value, fieldRules[name]);
+                    this.validator.showFieldError(name, this.validator.errors[name]);
+                });
+            });
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                this.validator.clearErrors();
+
+                let allValid = true;
+                Object.entries(fieldRules).forEach(([name, rs]) => {
+                    const el = form.querySelector(`[name="${name}"]`);
+                    const ok = this.validator.validateField(name, el?.value || '', rs);
+                    this.validator.showFieldError(name, this.validator.errors[name]);
+                    if (!ok) allValid = false;
+                });
+
+                if (!allValid) {
+                    return;
+                }
+
+                const btn = document.getElementById('submit-order-btn');
+                const statusEl = document.getElementById('order-status');
+                btn.disabled = true;
+                btn.textContent = 'Placing order…';
+                statusEl.textContent = '';
+
+                try {
+                    const orderData = {
+                        name:    form.querySelector('[name="name"]').value,
+                        email:   form.querySelector('[name="email"]').value,
+                        phone:   form.querySelector('[name="phone"]').value,
+                        address: form.querySelector('[name="address"]').value,
+                        comment: form.querySelector('[name="comment"]').value,
+                        items:   this.cart.getEntries(this.products).map(({ product, qty }) => ({
+                            id: product.id, name: product.name, qty, price: product.price
+                        })),
+                        total:   this.cart.calcTotal(this.products)
+                    };
+
+                    await this.api.placeOrder(orderData);
+
+                    statusEl.style.color = 'var(--success)';
+                    statusEl.textContent = '✓ Order placed successfully! Thank you.';
+                    this.cart.clear();
+                    setTimeout(() => this._render(), 1500);
+                    form.reset();
+                    document.getElementById('checkout-form-wrapper').style.display = 'none';
+                } catch (err) {
+                    statusEl.style.color = 'var(--danger)';
+                    statusEl.textContent = '✗ Error: ' + err.message;
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Place Order';
+                }
+            });
+        }
+
+        _updateCartBadge() {
+            const el = document.getElementById('cart-count');
+            if (el) el.textContent = this.cart.totalItems;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const page = new CartPage();
+        page.init();
+    });
+</script>
+</body>
+</html>

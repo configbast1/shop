@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> админ панель — NEXUS SHOP</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ─ Validator.js додає .error-message ─ */
+        .error-message {
+            display: block;
+            font-size: .78rem;
+            color: var(--danger);
+            margin-top: 4px;
+        }
+
+        /* ── Login screen ── */
+        .moderator-login {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 80px);
+            padding: 24px;
+        }
+        .moderator-login__card {
+            background: var(--bg-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 40px 36px;
+            width: 100%;
+            max-width: 420px;
+        }
+        .moderator-login__title {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--accent);
+            margin-bottom: 6px;
+        }
+        .moderator-login__subtitle {
+            font-size: .88rem;
+            color: var(--text-2);
+            margin-bottom: 28px;
+        }
+        .login-error {
+            display: block;
+            font-size: .85rem;
+            color: var(--danger);
+            margin-top: 10px;
+            text-align: center;
+        }
+        .form-hint {
+            display: block;
+            font-size: .78rem;
+            color: var(--text-2);
+            margin-top: 4px;
+        }
+
+        /* ── Dashboard header ── */
+        .moderator-header {
+            background: var(--bg-1);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+        }
+        .moderator-header__inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 16px 0;
+        }
+        .moderator-header__title {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--accent);
+        }
+        .moderator-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-1);
+            font-size: .9rem;
+        }
+        .btn--sm {
+            padding: 6px 14px;
+            font-size: .78rem;
+        }
+        .btn--xs {
+            padding: 4px 10px;
+            font-size: .72rem;
+        }
+
+        /* ── Dashboard content ── */
+        .moderator-content {
+            padding: 32px 24px 60px;
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        /* ── Stats grid ── */
+        .moderator-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        /* ── Tabs ── */
+        .moderator-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0;
+        }
+        .moderator-tab {
+            font-family: var(--font-display);
+            font-size: .9rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-2);
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-bottom: -1px;
+            transition: var(--transition);
+        }
+        .moderator-tab:hover { color: var(--text-0); }
+        .moderator-tab--active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        /* ── Tab sections ── */
+        .moderator-section { display: none; }
+        .moderator-section--active { display: block; }
+
+        /* ── Products grid in moderator ── */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        /* ── Product card controls ── */
+        .product-card__controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .control-group label {
+            display: block;
+            font-size: .72rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-2);
+            margin-bottom: 4px;
+        }
+        .price-input,
+        .stock-input {
+            width: 100%;
+            background: var(--bg-3);
+            border: 1px solid var(--border);
+            color: var(--text-0);
+            padding: 8px 12px;
+            border-radius: var(--radius);
+            font-size: .88rem;
+            font-family: var(--font-body);
+            transition: var(--transition);
+        }
+        .price-input:focus,
+        .stock-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        .mt-12 { margin-top: 12px; }
+
+        /* ── Product badge ── */
+        .product-badge {
+            font-size: .7rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 6px;
+            display: inline-block;
+        }
+        .product-card__header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        /* ── Orders table ── */
+        .orders-table {
+            overflow-x: auto;
+        }
+        .orders-list {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-2);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .orders-list th {
+            background: var(--bg-3);
+            text-align: left;
+            padding: 14px 18px;
+            font-size: .72rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-2);
+            border-bottom: 1px solid var(--border);
+        }
+        .orders-list td {
+            padding: 14px 18px;
+            font-size: .88rem;
+            color: var(--text-1);
+            border-bottom: 1px solid var(--border);
+        }
+        .orders-list tr:last-child td { border-bottom: none; }
+        .orders-list tr:hover td { background: var(--surface); color: var(--text-0); }
+        .order-id { font-family: var(--font-display); color: var(--accent); font-weight: 700; }
+        .badge-success {
+            background: rgba(0,230,118,.15);
+            color: var(--success);
+            font-size: .7rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border-radius: 999px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== ЭКРАН ВХОДА ===== -->
+<div id="login-screen" class="moderator-login">
+    <div class="moderator-login__card">
+        <h1 class="moderator-login__title">⚙ Модератор</h1>
+        <p class="moderator-login__subtitle">Адміністративна панель</p>
+
+        <form id="login-form" novalidate>
+            <div class="form-group">
+                <label for="login-user">Ім'я користувача</label>
+                <input type="text" id="login-user" name="username" class="form-input"
+                       placeholder="admin" value="admin" autocomplete="username">
+            </div>
+
+            <div class="form-group">
+                <label for="login-pass">Пароль</label>
+                <input type="password" id="login-pass" name="password" class="form-input"
+                       placeholder="••••••" value="mod123" autocomplete="current-password">
+                <small class="form-hint">Пароль: <strong>mod123</strong></small>
+            </div>
+
+            <button type="submit" class="btn btn--primary btn--full" id="login-btn">
+                Вход
+            </button>
+            <p id="login-error" class="login-error"></p>
+        </form>
+    </div>
+</div>
+
+<!-- ===== ПАНЕЛЬ АДМІНІСТРАТОРА ===== -->
+<div id="dashboard-screen" style="display: none;">
+    <!-- Заголовок -->
+    <div class="moderator-header">
+        <div class="moderator-header__inner">
+            <h1 class="moderator-header__title">⚙ Панель Адміністратора</h1>
+            <div class="moderator-user">
+                <span id="username-display">admin</span>
+                <button class="btn btn--danger btn--sm" id="logout-btn">Вихід</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Зміст панелі -->
+    <div class="moderator-content">
+
+        <!-- Статистика -->
+        <div class="moderator-stats">
+            <div class="stat-card">
+                <div class="stat-card__value" id="stat-products">0</div>
+                <div class="stat-card__label">Всього товарів</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card__value" id="stat-orders">0</div>
+                <div class="stat-card__label">Всього замовлень</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card__value" id="stat-revenue">$0</div>
+                <div class="stat-card__label">Загальний дохід</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card__value" id="stat-stock">0</div>
+                <div class="stat-card__label">На складі</div>
+            </div>
+        </div>
+
+        <!-- Вкладки -->
+        <div class="moderator-tabs">
+            <button class="moderator-tab moderator-tab--active" data-tab="products">📦 Товари</button>
+            <button class="moderator-tab" data-tab="orders">📋 Замовлення</button>
+        </div>
+
+        <!-- Розділ: Товари -->
+        <div id="products-section" class="moderator-section moderator-section--active">
+            <div class="products-grid" id="products-container">
+                <div class="spinner"></div>
+            </div>
+        </div>
+
+        <!-- Розділ: Замовлення -->
+        <div id="orders-section" class="moderator-section">
+            <div class="orders-table" id="orders-container">
+                <div style="padding: 40px; text-align: center;">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ===== Firebase SDK (compat версия) ===== -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<!-- Firebase конфиг — инициализирует firebase и переменную db -->
+<script src="js/firebase.config.js"></script>
+
+<script src="js/Product.js"></script>
+<script src="js/Cart.js"></script>
+<script src="js/Api.js"></script>
+<script src="js/Validator.js"></script>
+
+<script>
+    // ============================================================
+    //  ModeratorPanel — адміністративна панель
+    // ============================================================
+    class ModeratorPanel {
+        constructor() {
+            this.api = new Api('./');
+            this.products = [];
+            this.orders = [];
+            this.isLoggedIn = false;
+        }
+
+        init() {
+            this._bindLoginForm();
+            this._bindTabSwitcher();
+            this._bindLogoutBtn();
+        }
+
+        // === ВХОД ===
+        _bindLoginForm() {
+            const form = document.getElementById('login-form');
+            const loginBtn = document.getElementById('login-btn');
+            const errorEl = document.getElementById('login-error');
+
+            form?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                errorEl.textContent = '';
+                loginBtn.disabled = true;
+                loginBtn.textContent = 'Входимо...';
+
+                try {
+                    const username = form.querySelector('[name="username"]').value;
+                    const password = form.querySelector('[name="password"]').value;
+
+                    const result = await this.api.loginModerator({ username, password });
+
+                    if (result.token) {
+                        this.isLoggedIn = true;
+                        document.getElementById('username-display').textContent = username;
+                        document.getElementById('login-screen').style.display = 'none';
+                        document.getElementById('dashboard-screen').style.display = '';
+                        await this._loadDashboard();
+                    }
+                } catch (err) {
+                    errorEl.textContent = '❌ ' + (err.message || 'Помилка входу');
+                } finally {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Вход';
+                }
+            });
+        }
+
+        // === ЗАГРУЗКА ПАНЕЛИ ===
+        async _loadDashboard() {
+            try {
+                // ✅ Загружаем товары и заказы из Firestore одновременно
+                const [productsData, ordersData] = await Promise.all([
+                    this.api.getProducts(),
+                    this.api.getOrders()
+                ]);
+                this.products = productsData.map(d => new Product(d));
+                this.orders   = ordersData;
+                this._renderStats();
+                this._renderProducts();
+                this._renderOrders();
+            } catch (err) {
+                console.error('Ошибка при загрузке:', err);
+            }
+        }
+
+        // === СТАТИСТИКА ===
+        _renderStats() {
+            const totalStock   = this.products.reduce((sum, p) => sum + p.stock, 0);
+            const totalRevenue = this.orders.reduce((sum, o) => sum + (o.total || 0), 0);
+
+            document.getElementById('stat-products').textContent = this.products.length;
+            document.getElementById('stat-orders').textContent   = this.orders.length;
+            document.getElementById('stat-revenue').textContent  = `$${totalRevenue.toFixed(2)}`;
+            document.getElementById('stat-stock').textContent    = totalStock;
+        }
+
+        // === ТОВАРИ ===
+        _renderProducts() {
+            const container = document.getElementById('products-container');
+            if (!container) return;
+
+            if (this.products.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state__icon">📦</div><p>Товарів не знайдено</p></div>';
+                return;
+            }
+
+            container.innerHTML = this.products.map(p => `
+                <div class="product-card">
+                    <div class="product-card__emoji">${p.image}</div>
+                    <div class="product-card__body">
+                        <div class="product-card__header">
+                            <span class="product-badge">${p.category}</span>
+                            <button class="btn btn--danger btn--xs" onclick="moderatorPanel.deleteProduct(${p.id})">✕ Видалити</button>
+                        </div>
+                        <h3 class="product-card__name">${p.name}</h3>
+                        <p class="product-card__desc">${p.description.substring(0, 60)}…</p>
+                        <div class="product-card__price">${p.formattedPrice}</div>
+
+                        <div class="product-card__controls">
+                            <div class="control-group">
+                                <label>Ціна</label>
+                                <input type="number" step="0.01" class="price-input" data-id="${p.id}" value="${p.price}">
+                            </div>
+                            <div class="control-group">
+                                <label>На складі</label>
+                                <input type="number" class="stock-input" data-id="${p.id}" value="${p.stock}">
+                            </div>
+                        </div>
+                        <button class="btn btn--primary btn--full mt-12" onclick="moderatorPanel.updateProduct(${p.id})">
+                            Зберегти зміни
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ЗАКАЗЫ (из Firestore) ✅
+        _renderOrders() {
+            const container = document.getElementById('orders-container');
+            if (!container) return;
+
+            if (this.orders.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state__icon">📋</div><p>Заказов ещё нет. Сделайте тестовый заказ через корзину!</p></div>';
+                return;
+            }
+
+            let html = `
+                <table class="orders-list">
+                    <thead>
+                        <tr>
+                            <th>ID Firestore</th>
+                            <th>Клиент</th>
+                            <th>Email</th>
+                            <th>Телефон</th>
+                            <th>Адрес</th>
+                            <th>Сумма</th>
+                            <th>Товаров</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            this.orders.forEach(order => {
+                const itemsCount = order.items?.length || 0;
+                const shortId    = (order.firestoreId || '').substring(0, 8) + '…';
+                html += `
+                    <tr>
+                        <td class="order-id" title="${order.firestoreId}">#${shortId}</td>
+                        <td>${order.name || '—'}</td>
+                        <td>${order.email || '—'}</td>
+                        <td>${order.phone || '—'}</td>
+                        <td>${order.address || '—'}</td>
+                        <td><strong>$${(order.total || 0).toFixed(2)}</strong></td>
+                        <td>${itemsCount} шт.</td>
+                        <td><span class="badge-success">✓ ${order.status || 'new'}</span></td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        // === УПРАВЛЕНИЕ ТОВАРАМИ (через Firestore) ===
+        async updateProduct(productId) {
+            const priceInput = document.querySelector(`.price-input[data-id="${productId}"]`);
+            const stockInput = document.querySelector(`.stock-input[data-id="${productId}"]`);
+            if (!priceInput || !stockInput) return;
+
+            const newPrice = parseFloat(priceInput.value);
+            const newStock = parseInt(stockInput.value);
+
+            try {
+                // ✅ Сохраняем изменения в Firestore
+                await this.api.updateProduct(productId, { price: newPrice, stock: newStock });
+                const product = this.products.find(p => p.id === productId);
+                if (product) { product.price = newPrice; product.stock = newStock; }
+                alert(`✓ Товар обновлён в Firestore!`);
+                this._renderStats();
+                this._renderProducts();
+            } catch (err) {
+                alert('Ошибка: ' + err.message);
+            }
+        }
+
+        async deleteProduct(productId) {
+            if (!confirm('Удалить товар из Firestore?')) return;
+            try {
+                // ✅ Удаляем из Firestore
+                await this.api.deleteProduct(productId);
+                const index = this.products.findIndex(p => p.id === productId);
+                if (index !== -1) {
+                    const name = this.products[index].name;
+                    this.products.splice(index, 1);
+                    alert(`✓ Товар "${name}" удалён из Firestore!`);
+                    this._renderStats();
+                    this._renderProducts();
+                }
+            } catch (err) {
+                alert('Ошибка: ' + err.message);
+            }
+        }
+
+        // === ВКЛАДКИ ===
+        _bindTabSwitcher() {
+            document.querySelectorAll('.moderator-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.dataset.tab;
+
+                    document.querySelectorAll('.moderator-tab').forEach(t => {
+                        t.classList.remove('moderator-tab--active');
+                    });
+                    document.querySelectorAll('.moderator-section').forEach(s => {
+                        s.classList.remove('moderator-section--active');
+                    });
+
+                    tab.classList.add('moderator-tab--active');
+                    document.getElementById(`${tabName}-section`).classList.add('moderator-section--active');
+                });
+            });
+        }
+
+        //  выход
+        _bindLogoutBtn() {
+            document.getElementById('logout-btn')?.addEventListener('click', () => {
+                this.isLoggedIn = false;
+                document.getElementById('login-screen').style.display = '';
+                document.getElementById('dashboard-screen').style.display = 'none';
+                document.getElementById('login-form').reset();
+                document.getElementById('login-error').textContent = '';
+            });
+        }
+    }
+
+    const moderatorPanel = new ModeratorPanel();
+    document.addEventListener('DOMContentLoaded', () => {
+        moderatorPanel.init();
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,15 @@
+# ⚠️ ВАЖНО: никогда не коммить файл с ключом Firebase Admin SDK!
+serviceAccountKey.json
+*-firebase-adminsdk-*.json
+
+# Зависимости Node.js
+node_modules/
+
+# Переменные окружения
+.env
+.env.local
+
+# Системные файлы
+.DS_Store
+Thumbs.db
+*.log

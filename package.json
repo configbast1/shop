@@ -1,0 +1,19 @@
+{
+  "name": "nexusshop",
+  "version": "1.0.0",
+  "description": "NexusShop — Gaming Gear Store",
+  "main": "js/server.js",
+  "scripts": {
+    "start": "node js/server.js",
+    "seed": "node js/seed.js"
+  },
+  "private": true,
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.2.1",
+    "firebase-admin": "^12.7.0"
+  }
+}
