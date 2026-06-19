@@ -33,7 +33,7 @@ class Api {
             status: 'new',
             createdAt: firebase.firestore.FieldValue.serverTimestamp() // временная метка на сервере
         });
-        return { id: docRef.id }; // возвращаем ID созданного документа
+        return { id: docRef.id }; // возвращаем айдии созданного документа
     }
 
     // Загрузить все заказы из Firestore (для панели модератора)
@@ -54,7 +54,7 @@ class Api {
         await db.collection('products').doc(String(productId)).delete();
     }
 
-    // Сохранить пользователя в Firestore (коллекция "users") ✅
+    // Сохранить пользователя в Firestore (коллекция "users") 
     async registerUser(userData) {
         const docRef = await db.collection('users').add({
             name:      userData.name,
