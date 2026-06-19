@@ -19,7 +19,7 @@ class Api {
         const snapshot = await db.collection('products').get(); // GET-запрос к коллекции "products" в Firestore
         return snapshot.docs.map(doc => doc.data()); // превращаем документы Firestore в массив JS-объектов
     }
-
+    // Дз fetch функция и FakeStoreAPI
     // Получить один случайный товар с FakeStoreAPI (демонстрация внешнего fetch)
     async getFeaturedProduct() {
         const id = Math.floor(Math.random() * 20) + 1;
